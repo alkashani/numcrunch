@@ -6,8 +6,10 @@ Currently implemented:
 
 # compile
 ```sh
-make clean
+cd _build
+cmake ..
 make
+# executables can be found under _bin
 ```
 To generate assembly, which is handy if you want to verify certain optimization has kicked in, use the following:
 ```sh

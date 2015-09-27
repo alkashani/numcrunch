@@ -16,7 +16,7 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
 {
     int i, k;
     unsigned d;
-    __m256d mx, mt, mc;
+    __m256d mx, mt;
     __m256d be, bo;
 
     double b0, b;
