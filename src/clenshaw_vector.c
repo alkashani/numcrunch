@@ -41,11 +41,11 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
 {
     int i, k;
     unsigned d;
-    vdouble mx, mt;
+    vdouble mx, mx2, mt;
     vdouble be, bo;
 
     double b, b0 = 0;
-    const double multi = 2.0;
+    const double two = 2.0;
 
     d = c->degree;
     if (d & 1) {
@@ -58,18 +58,17 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
 
     for (i = 0; i < x->len; i += 4) {
         mx = load_pd(&x->val[i]);
-        mx = mul_pd(mx, broadcast_sd(&multi));
+        mx2 = mul_pd(mx, broadcast_sd(&two));
         be = broadcast_sd(&b0);
         bo = broadcast_sd(&b);
 
         for (k = d; k > 0; k -= 2) {
-            mt = fmsub_pd(mx, bo, be);
+            mt = fmsub_pd(mx2, bo, be);
             be = add_pd(mt, broadcast_sd(&c->val[k]));
-            mt = fmsub_pd(mx, be, bo);
+            mt = fmsub_pd(mx2, be, bo);
             bo = add_pd(mt, broadcast_sd(&c->val[k-1]));
         }
 
-        mx = load_pd(&x->val[i]);
         mt = fmsub_pd(mx, bo, be);
         be = add_pd(mt, broadcast_sd(&c->val[0]));
 
