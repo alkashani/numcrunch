@@ -1,6 +1,29 @@
 #include "clenshaw.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <x86intrin.h>
+
+#define ALIGNMENT (size_t)32
+
+/**
+ * @param[in]  card: number of doubles to allocate
+ *
+ * allocation honors alignment set with ALIGNMENT.
+ *
+ * @return: point to the array of doubles allocated, or NULL if unsuccessful
+ */
+double *
+alloc_doubles(unsigned card) {
+    double *val;
+
+    if (posix_memalign((void **)&val, ALIGNMENT, card * sizeof(double)) != 0) {
+        printf("fatal error: alloc failed due to OOM. exit.");
+        exit(EXIT_FAILURE);
+    }
+
+    return val;
+}
 
 /**
  * @param[out] y: output points, memory should be preallocated

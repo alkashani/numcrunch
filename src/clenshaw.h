@@ -17,4 +17,5 @@ struct points {
     double *val; /* array of cardinality len */
 };
 
+double *alloc_doubles(unsigned card);
 void clenshaw(struct points *y, struct points *x, struct coefficients *c);
