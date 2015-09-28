@@ -1,6 +1,29 @@
 #include "clenshaw.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <x86intrin.h>
+
+#define ALIGNMENT (size_t)32
+
+/**
+ * @param[in]  card: number of doubles to allocate
+ *
+ * allocation honors alignment set with ALIGNMENT.
+ *
+ * @return: point to the array of doubles allocated, or NULL if unsuccessful
+ */
+double *
+alloc_doubles(unsigned card) {
+    double *val;
+
+    if (posix_memalign((void **)&val, ALIGNMENT, card * sizeof(double)) != 0) {
+        printf("fatal error: alloc failed due to OOM. exit.");
+        exit(EXIT_FAILURE);
+    }
+
+    return val;
+}
 
 /**
  * @param[out] y: output points, memory should be preallocated
@@ -16,7 +39,7 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
 {
     int i, k;
     unsigned d;
-    __m256d mx, mt, mc;
+    __m256d mx, mt;
     __m256d be, bo;
 
     double b0, b;
@@ -38,21 +61,18 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
         bo = _mm256_broadcast_sd(&b);
 
         for (k = d; k > 0; k -= 2) {
-            mt = _mm256_mul_pd(mx, bo);
-            be = _mm256_sub_pd(mt, be);
-            be = _mm256_add_pd(be, _mm256_broadcast_sd(&c->val[k]));
-            mt = _mm256_mul_pd(mx, be);
-            bo = _mm256_sub_pd(mt, bo);
-            bo = _mm256_add_pd(bo, _mm256_broadcast_sd(&c->val[k-1]));
+            mt = _mm256_fmsub_pd(mx, bo, be);
+            be = _mm256_add_pd(mt, _mm256_broadcast_sd(&c->val[k]));
+            mt = _mm256_fmsub_pd(mx, be, bo);
+            bo = _mm256_add_pd(mt, _mm256_broadcast_sd(&c->val[k-1]));
 
             //b_even = c->val[k] + x2 * b_odd - b_even;
             //b_odd = c->val[k-1] + x2 * b_even - b_odd;
         }
 
         mx = _mm256_load_pd(&x->val[i]);
-        mt = _mm256_mul_pd(mx, bo);
-        be = _mm256_sub_pd(mt, be);
-        be = _mm256_add_pd(be, _mm256_broadcast_sd(&c->val[0]));
+        mt = _mm256_fmsub_pd(mx, bo, be);
+        be = _mm256_add_pd(mt, _mm256_broadcast_sd(&c->val[0]));
 
         _mm256_store_pd(&y->val[i], be);
         //y->val[i] = c->val[0] + x->val[i] * b_odd - b_even;

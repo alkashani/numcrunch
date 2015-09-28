@@ -1,5 +1,26 @@
 #include "clenshaw.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * @param[in]  card: number of doubles to allocate
+ *
+ * @return: point to the array of doubles allocated, or NULL if unsuccessful
+ */
+double *
+alloc_doubles(unsigned card) {
+    double *val;
+
+    val = malloc(card * sizeof(double));
+    if (val == NULL) {
+        printf("fatal error: alloc failed due to OOM. exit.");
+        exit(EXIT_FAILURE);
+    }
+
+    return val;
+}
+
 /**
  * @param[out] y: output points, memory should be preallocated
  * @param[in]  c: coefficient
