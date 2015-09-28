@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define ALIGN_UP(_s, _a) ((size_t)(((_s) + (_a - 1)) & ~(_a - 1)))
+
 /**
  * @param[in]  card: number of doubles to allocate
  *
@@ -15,7 +17,8 @@ double *
 alloc_doubles(unsigned card) {
     double *val;
 
-    if (posix_memalign((void **)&val, ALIGNMENT, card * sizeof(double)) != 0) {
+    if (posix_memalign((void **)&val, ALIGNMENT,
+                ALIGN_UP(card * sizeof(double), ALIGNMENT)) != 0) {
         printf("fatal error: alloc failed due to OOM. exit.");
         exit(EXIT_FAILURE);
     }
