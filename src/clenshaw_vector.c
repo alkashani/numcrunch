@@ -31,7 +31,8 @@ alloc_doubles(unsigned card) {
  * @param[in]  c: coefficient
  * @param[in]  x: input points
  *
- * values of these structs has to be 32-byte aligned!
+ * val of these structs has to be aligned to feed into the vdouble (alias) type,
+ * use function alloc_doubles to ensure correct alignment.
  *
  * @return:
  */
