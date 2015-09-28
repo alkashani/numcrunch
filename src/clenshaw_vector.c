@@ -1,10 +1,8 @@
 #include "clenshaw.h"
+#include "vectorized.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <x86intrin.h>
-
-#define ALIGNMENT (size_t)32
 
 /**
  * @param[in]  card: number of doubles to allocate
@@ -39,10 +37,10 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
 {
     int i, k;
     unsigned d;
-    __m256d mx, mt;
-    __m256d be, bo;
+    vdouble mx, mt;
+    vdouble be, bo;
 
-    double b0, b;
+    double b, b0 = 0;
     const double multi = 2.0;
 
     d = c->degree;
@@ -55,26 +53,22 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
     }
 
     for (i = 0; i < x->len; i += 4) {
-        mx = _mm256_load_pd(&x->val[i]);
-        mx = _mm256_mul_pd(mx, _mm256_broadcast_sd(&multi));
-        be = _mm256_broadcast_sd(&b0);
-        bo = _mm256_broadcast_sd(&b);
+        mx = load_pd(&x->val[i]);
+        mx = mul_pd(mx, broadcast_sd(&multi));
+        be = broadcast_sd(&b0);
+        bo = broadcast_sd(&b);
 
         for (k = d; k > 0; k -= 2) {
-            mt = _mm256_fmsub_pd(mx, bo, be);
-            be = _mm256_add_pd(mt, _mm256_broadcast_sd(&c->val[k]));
-            mt = _mm256_fmsub_pd(mx, be, bo);
-            bo = _mm256_add_pd(mt, _mm256_broadcast_sd(&c->val[k-1]));
-
-            //b_even = c->val[k] + x2 * b_odd - b_even;
-            //b_odd = c->val[k-1] + x2 * b_even - b_odd;
+            mt = fmsub_pd(mx, bo, be);
+            be = add_pd(mt, broadcast_sd(&c->val[k]));
+            mt = fmsub_pd(mx, be, bo);
+            bo = add_pd(mt, broadcast_sd(&c->val[k-1]));
         }
 
-        mx = _mm256_load_pd(&x->val[i]);
-        mt = _mm256_fmsub_pd(mx, bo, be);
-        be = _mm256_add_pd(mt, _mm256_broadcast_sd(&c->val[0]));
+        mx = load_pd(&x->val[i]);
+        mt = fmsub_pd(mx, bo, be);
+        be = add_pd(mt, broadcast_sd(&c->val[0]));
 
-        _mm256_store_pd(&y->val[i], be);
-        //y->val[i] = c->val[0] + x->val[i] * b_odd - b_even;
+        store_pd(&y->val[i], be);
     }
 }

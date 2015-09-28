@@ -34,7 +34,7 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
     int i, k;
     unsigned d;
     double b, x2;
-    double b_even, b_odd;
+    double be, bo;
 
     d = c->degree;
     if (d & 1) {
@@ -47,13 +47,13 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
 
     for (i = 0; i < x->len; i++) {
         x2 = 2 * x->val[i];
-        b_even = 0;
-        b_odd = b;
+        be = 0;
+        bo = b;
 
         for (k = d; k > 0; k -= 2) {
-            b_even = c->val[k] + x2 * b_odd - b_even;
-            b_odd = c->val[k-1] + x2 * b_even - b_odd;
+            be = c->val[k] + x2 * bo - be;
+            bo = c->val[k-1] + x2 * be - bo;
         }
-        y->val[i] = c->val[0] + x->val[i] * b_odd - b_even;
+        y->val[i] = c->val[0] + x->val[i] * bo - be;
     }
 }
