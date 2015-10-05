@@ -1,8 +1,13 @@
 #include "clenshaw.h"
 #include "vectorized.h"
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+/* TODO: reuse the vector version properly instead of duplicating code */
+
+#define ALIGN_UP(_s, _a) ((size_t)(((_s) + (_a - 1)) & ~(_a - 1)))
 
 /**
  * @param[in]  card: number of doubles to allocate
@@ -24,18 +29,8 @@ alloc_doubles(unsigned card) {
     return val;
 }
 
-/**
- * @param[out] y: output points, memory should be preallocated
- * @param[in]  c: coefficient
- * @param[in]  x: input points
- *
- * val of these structs has to be aligned to feed into the vdouble (alias) type,
- * use function alloc_doubles to ensure correct alignment.
- *
- * @return:
- */
 void
-clenshaw(struct points *y, struct points *x, struct coefficients *c)
+_clenshaw(struct points *y, struct points *x, struct coefficients *c)
 {
     int i, k;
     unsigned d;
@@ -72,4 +67,25 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
 
         store_pd(&y->val[i], be);
     }
+}
+
+static inline void
+_thread_main(struct args *args) {
+    _clenshaw(args->y, args->x, args->c);
+}
+
+/**
+ * @param[out] y: output points, memory should be preallocated
+ * @param[in]  c: coefficient
+ * @param[in]  x: input points
+ *
+ * val of these structs has to be aligned to feed into the vdouble (alias) type,
+ * use function alloc_doubles to ensure correct alignment.
+ *
+ * @return:
+ */
+void
+clenshaw(struct points *y, struct points *x, struct coefficients *c)
+{
+
 }

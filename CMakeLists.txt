@@ -3,6 +3,8 @@ project(numcrunch)
 
 #enable_testing()
 
+find_package(Threads)
+
 include(CheckSymbolExists)
 #check_symbol_exists(sys_signame signal.h HAVE_SIGNAME)
 

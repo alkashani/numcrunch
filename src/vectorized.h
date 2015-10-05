@@ -2,6 +2,8 @@
 
 #define ALIGNMENT (size_t)32
 
+#define ALIGN_UP(_s, _a) ((size_t)(((_s) + (_a - 1)) & ~(_a - 1)))
+
 typedef __m256d vdouble;
 
 #define load_pd _mm256_load_pd
