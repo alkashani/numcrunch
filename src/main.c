@@ -1,10 +1,13 @@
 #include "clenshaw.h"
+#include "vectorized.h"
 
 #include <limits.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/param.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -14,10 +17,17 @@ struct cmdline_options {
     unsigned c_degree;  /* d */
     unsigned x_len;     /* p */
     unsigned rounds;    /* r */
+    unsigned threads;   /* t */
     char *c_fname;      /* c */
     char *x_fname;      /* x */
     char *y_fname;      /* y */
 } options;
+
+struct args {
+    struct points *y;
+    struct points *x;
+    struct coefficients *c;
+};
 
 bool simulate_mode = false;
 
@@ -39,8 +49,63 @@ usage(char *cmd) {
            "    2) -x, the input points\n"
            "    3) -y, the output points\n"
            "each file should start with cardinality as a 4-byte integer, e.g.:\n"
-           "    %s -c c.in -x x.in -y y.out\n\n", cmd, cmd
+           "    %s -c c.in -x x.in -y y.out\n\n"
+           "If the number of threads to use is provided (with -t), the program "
+           "will attempt to use multiple threads, e.g.:\n"
+           "    %s -d 1000 -p 100 -r 10 -t 4\n\n", cmd, cmd, cmd
           );
+}
+
+static void *
+thread_clenshaw_main(void *arg) {
+    struct args *args = (struct args *)arg;
+
+    clenshaw(args->y, args->x, args->c);
+
+    return NULL;
+}
+
+static void
+thread_clenshaw(void)
+{
+    /* input may need to be divided up into up to options.threads portions */
+    struct args *subargs = malloc(options.threads * sizeof(struct args));
+    struct points *subx = malloc(options.threads * sizeof(struct points));
+    struct points *suby = malloc(options.threads * sizeof(struct points));
+    pthread_t *pthreads = malloc(options.threads * sizeof(pthread_t));
+    unsigned remain = x.len;
+    /* number of doubles in x taken by all but the last thread will be aligned
+     * with the vector size used in vectorized.h
+     */
+    unsigned xmin = ALIGNMENT / sizeof(double);
+    unsigned xslice = MAX(ALIGN_UP(x.len / options.threads, xmin), xmin);
+    unsigned i, xl, nthread = 0;
+    double *xv = x.val;
+    double *yv = y.val;
+
+    while (remain > 0) {
+        xl = MIN(remain, xslice);
+        remain -= xl;
+        subx[nthread] = (struct points){xl, xv};
+        suby[nthread] = (struct points){xl, yv};
+        subargs[nthread] = (struct args){&suby[nthread], &subx[nthread], &c};
+        nthread++;
+        xv += xl;
+        yv += xl;
+    }
+    nthread--;
+
+    for (i = 1; i <= nthread; i++) {
+        /* TODO: handle pthread creation error */
+        pthread_create(&pthreads[i], NULL, &thread_clenshaw_main, &subargs[i]);
+    }
+
+    /* first thread is the current thread */
+    clenshaw(subargs[0].y, subargs[0].x, subargs[0].c);
+
+    for (i = 1; i <= nthread; i++) {
+        pthread_join(pthreads[i], NULL);
+    }
 }
 
 static double *
@@ -86,7 +151,11 @@ simulate(unsigned rounds)
 
     gettimeofday(&tv_start, NULL);
     for (int i = 0; i < rounds; i++) {
-        clenshaw(&y, &x, &c);
+        if (options.threads == 0) { /* -t not specified */
+            clenshaw(&y, &x, &c);
+        } else {
+            thread_clenshaw();
+        }
     }
     gettimeofday(&tv_finish, NULL);
 
@@ -103,7 +172,7 @@ parse_options(int argc, char **argv)
 {
     char opt;
 
-    while ((opt = getopt(argc, argv, "hd:p:r:c:x:y:")) != -1) {
+    while ((opt = getopt(argc, argv, "ht:d:p:r:c:x:y:")) != -1) {
         switch (opt) {
         case 'h':
             usage(argv[0]);
@@ -119,6 +188,9 @@ parse_options(int argc, char **argv)
         case 'r':
             simulate_mode = true;
             options.rounds = (unsigned)atoi(optarg);
+            break;
+        case 't':
+            options.threads = (unsigned)atoi(optarg);
             break;
         case 'c':
             options.c_fname = optarg;
@@ -178,7 +250,11 @@ main (int argc, char **argv)
     y.val = alloc_doubles(y.len);
 
     /* compute */
-    clenshaw(&y, &x, &c);
+    if (options.threads == 0) { /* -t not specified */
+        clenshaw(&y, &x, &c);
+    } else {
+        thread_clenshaw();
+    }
 
     /* output */
     nbyte = fwrite(y.val, sizeof(double), y.len, fy);
