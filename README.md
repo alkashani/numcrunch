@@ -35,4 +35,14 @@ $ ./clenshaw_vector -d 100000 -p 10000 -r 10
 total time:     7.184084 s
 time per round: 718.408400 ms
 time per point: 71.840840 us
+
+$ ./clenshaw_thread -d 100000 -p 10000 -r 10 -t 2
+total time:     3.373523 s
+time per round: 337.352300 ms
+time per point: 33.735230 us
+
+$ ./clenshaw_thread -d 100000 -p 10000 -r 10 -t 4
+total time:     1.825505 s
+time per round: 182.550500 ms
+time per point: 18.255050 us
 ```
