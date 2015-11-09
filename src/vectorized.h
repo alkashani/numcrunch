@@ -1,5 +1,6 @@
 #include <x86intrin.h>
 
+#define STRIDE 4 /* number of doubles */
 #define ALIGNMENT (size_t)32
 
 #define ALIGN_UP(_s, _a) ((size_t)(((_s) + (_a - 1)) & ~(_a - 1)))

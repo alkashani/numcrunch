@@ -54,7 +54,7 @@ clenshaw(struct points *y, struct points *x, struct coefficients *c)
         b = 0;
     }
 
-    for (i = 0; i < x->len; i += 4) {
+    for (i = 0; i < x->len; i += STRIDE) {
         mx = load_pd(&x->val[i]);
         mx2 = mul_pd(mx, broadcast_sd(&two));
         be = broadcast_sd(&b0);
