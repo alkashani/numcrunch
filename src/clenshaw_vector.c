@@ -15,8 +15,7 @@ double *
 alloc_doubles(unsigned card) {
     double *val;
 
-    if (posix_memalign((void **)&val, ALIGNMENT,
-                ALIGN_SIZE(card * sizeof(double))) != 0) {
+    if (posix_memalign((void **)&val, ALIGNMENT, ALIGN_VECTOR(card)) != 0) {
         printf("fatal error: alloc failed due to OOM. exit.");
         exit(EXIT_FAILURE);
     }

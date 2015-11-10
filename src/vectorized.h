@@ -5,6 +5,7 @@
 
 #define ALIGN_UP(_s, _a) ((size_t)(((_s) + (_a - 1)) & ~(_a - 1)))
 #define ALIGN_SIZE(_s) ALIGN_UP(_s, ALIGNMENT)
+#define ALIGN_VECTOR(_s) ALIGN_UP((_s) * sizeof(double), ALIGNMENT)
 
 typedef __m256d vdouble;
 
