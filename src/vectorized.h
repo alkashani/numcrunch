@@ -1,9 +1,10 @@
 #include <x86intrin.h>
 
 #define STRIDE 4 /* number of doubles */
-#define ALIGNMENT (size_t)32
+#define ALIGNMENT (sizeof(double) * STRIDE)
 
 #define ALIGN_UP(_s, _a) ((size_t)(((_s) + (_a - 1)) & ~(_a - 1)))
+#define ALIGN_SIZE(_s) ALIGN_UP(_s, ALIGNMENT)
 
 typedef __m256d vdouble;
 
